@@ -43,52 +43,13 @@ GOOGLE_API_KEY=your_google_cloud_api_key
 
 ## Usage
 
-### Basic Usage
+### Examples
 
-The main class [`DeckGenerator`](deck_generator.py) can be configured for different types of vocabulary decks:
-
-```python
-from deck_generator import DeckGenerator
-
-# Configure AI settings
-ai_config = DeckGenerator.AIConfig(
-    open_router_key="your_api_key",
-    google_tts_key="your_google_key",
-    model="openai/gpt-4.1",
-    temperature=0.3
-)
-
-# Configure Anki deck settings
-anki_config = DeckGenerator.AnkiConfig(
-    model_id=1234567890,
-    deck_id=9876543210,
-    deck_name="My Vocabulary Deck"
-)
-
-# Define the schema for AI-generated content
-schema = DeckGenerator.SchemaConfig(
-    ai_schema=your_schema,
-    item_field="word",
-    provided_fields={"frequency": []},
-    field_order=["word", "definition", "example"]
-)
-
-# Create generator and generate deck
-generator = DeckGenerator(schema, ai_config, anki_config, gen_audio=True)
-generator.gen_deck(items=["word1", "word2"], output_dir="output")
-```
-
-### Korean Deck Generation Example
-
-Run the Korean-specific script:
-
-```bash
-python gen_korean_deck.py
-```
+en_ko_gen.py - Generate Anki deck. Word data are from google-10000-no-swears list. 
+ko_en_gen.py - Generate enhanced Anki deck utilizign data from an existing Anki deck of Korean words. 
 
 This script:
 - Imports vocabulary from an existing Korean Anki database
-- Randomly samples 100 words
 - Generates comprehensive content including:
   - Word type and explanation
   - Example sentences in Korean and English
@@ -97,32 +58,6 @@ This script:
   - Cultural notes
 - Creates audio files for pronunciation
 
-## Configuration
-
-### AI Schema Configuration
-
-The [`SchemaConfig`](deck_generator.py) class allows you to define what information the AI should generate:
-
-```python
-ai_schema = {
-    "definition": {
-        "description": "Clear definition of the word",
-    },
-    "examples": {
-        "description": "Example sentences using the word",
-        "list": True,  # Indicates this field should be a list
-    }
-}
-```
-
-### Field Order
-
-You can specify the order of fields in the generated Anki cards:
-
-```python
-field_order = ["frequency", "word", "definition", "examples"]
-```
-
 ## Dependencies
 
 Key dependencies include:
@@ -130,7 +65,7 @@ Key dependencies include:
 - `instructor` - Structured AI responses
 - `openai` - AI model integration
 - `google-cloud-texttospeech` - Audio generation
-- `pydantic` - Data validation and schema definition
+- `pydantic` - Schema definition
 
 See [requirements.txt](requirements.txt) for the complete list.
 

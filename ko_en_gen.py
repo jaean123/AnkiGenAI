@@ -1,37 +1,41 @@
 import os
 import logging
-import random
 import sqlite3
 import dotenv
+import openai
+import instructor
 from deck_generator import DeckGenerator
+from google.cloud import texttospeech
+from google.api_core.client_options import ClientOptions
+from google.cloud.texttospeech import VoiceSelectionParams
 
-output_dir = "output"
+# ---------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------
 
-# Set up logging
-os.makedirs(output_dir, exist_ok=True)
-logging.basicConfig(filename=f"{output_dir}/deck_gen.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.INFO)
+output_dir = "output/korean"
 
-db_path = "decks/Topik6000_Korean_Vocab/collection.anki2"
+# Data
+db_path = "data/Topik6000_Korean_Vocab/collection.anki2"
 
-# AI Configuration
-ai_config = DeckGenerator.AIConfig(
-    open_router_key=dotenv.get_key(".env", "OPENROUTER_API_KEY"),
-    google_tts_key=dotenv.get_key(".env", "GOOGLE_API_KEY"),
-    model="openai/gpt-4.1",
-    temperature=0.3
-)
+# LLM Config
+system_prompt = "You are an expert Korean language teacher based in US. Your task is to help students understand and learn Korean words."
+llm_model = "openai/gpt-4.1"
+llm_temperature = 0.3
 
-# Anki Configuration
+# Google TTS Config
+generate_audio = True
+language_code = "ko-KR"
+voice_name = "ko-KR-Chirp3-HD-Achernar"
+
+# Anki Config
 anki_config = DeckGenerator.AnkiConfig(
-    model_id=1234567890,
-    deck_id=9876543210,
-    deck_name="Test Korean Deck"
+    model_id=1234567892,
+    deck_id=9876543214,
+    deck_name="Korean AI"
 )
+
+word_field = "word"
 
 # Define the structured data model for AI output
 ai_schema = {
@@ -72,16 +76,13 @@ ai_schema = {
 provided_fields = ["frequency"]
 
 field_order = [
-    "frequency", "word", "type", "explanation", "example sentences", 
+    "frequency", word_field, "type", "explanation", "example sentences", 
     "sino roots", "korean roots", "cultural note", "synonyms", "antonyms",
 ]
 
-schema = DeckGenerator.SchemaConfig(
-    ai_schema=ai_schema,
-    item_field="word",
-    provided_fields=provided_fields,
-    field_order=field_order
-)
+# ---------------------------------------------------------------------
+# Functions
+# ---------------------------------------------------------------------
 
 def import_notes(cursor):
     cursor.execute("SELECT id, flds FROM notes ORDER BY id")
@@ -106,7 +107,50 @@ def import_notes(cursor):
         })
     return notes
 
+
 def main():
+    # SETUP LOGGING
+    os.makedirs(output_dir, exist_ok=True)
+    logging.basicConfig(filename=f"{output_dir}/deck_gen.log",
+                        format='%(asctime)s %(message)s',
+                        filemode='w')
+    logger = logging.getLogger()
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel(logging.INFO)
+
+    # AI CLIENT CONFIGURATION & SETUP
+    client = openai.OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=dotenv.get_key(".env", "OPENROUTER_API_KEY")
+    )
+    instructor_client = instructor.from_openai(client)
+    llm_config = DeckGenerator.LLMConfig(
+        instructor=instructor_client,
+        system_prompt=system_prompt,
+        model=llm_model,
+        temperature=llm_temperature
+    )
+
+    # GOOGLE TTS CONFIGURATION & SETUP
+    client_options = ClientOptions(
+        api_key=dotenv.get_key(".env", "GOOGLE_API_KEY"))
+    google_tts_client = texttospeech.TextToSpeechClient(
+        client_options=client_options)
+    voice = VoiceSelectionParams(language_code=language_code, name=voice_name)
+    tts_config = DeckGenerator.TTSConfig(
+        google_tts_client=google_tts_client,
+        voice=voice,
+    )
+
+    # SCHEMA CONFIGURATION
+    schema = DeckGenerator.SchemaConfig(
+        ai_schema=ai_schema,
+        item_field=word_field,
+        provided_fields=provided_fields,
+        field_order=field_order
+    )
+
+    # IMPORT DATA FROM DB
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         notes = import_notes(cursor)
@@ -118,19 +162,20 @@ def main():
     }
 
     # Randomly sample n items from the notes
-    sample_size = 100
-    random_indices = random.sample(range(len(notes)), sample_size)
-    items = [items[i] for i in random_indices]
-    provided_content = {
-        "frequency": [provided_content["frequency"][i] for i in random_indices]
-    }
+    # sample_size = 100
+    # random_indices = random.sample(range(len(notes)), sample_size)
+    # items = [items[i] for i in random_indices]
+    # provided_content = {
+    #     "frequency": [provided_content["frequency"][i] for i in random_indices]
+    # }
 
-
+    # GENERATE ANKI DECK
     deck_generator = DeckGenerator(
         schema=schema,
-        ai_config=ai_config,
+        llm_config=llm_config,
+        tts_config=tts_config,
         anki_config=anki_config,
-        gen_audio=True
+        gen_audio=generate_audio
     )
 
     deck_generator.gen_deck(
@@ -138,6 +183,7 @@ def main():
         provided_content=provided_content,
         output_dir=output_dir,
     )
+
 
 if __name__ == "__main__":
     main()

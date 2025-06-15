@@ -1,0 +1,19 @@
+<!-- Front Side -->
+<div class="front">
+    <div class="prompt">{{word}}</div>
+</div>
+
+<!-- Back Side -->
+<div class="back">
+    <div class="prompt">{{word}}</div>
+
+    {{audio}}
+
+    <div class="hint">
+        {{#type}}<p><span class="label">Note</span><br>{{type}}</p>{{/type}}
+        {{#explanation}}<p><span class="label">Definition</span><br>{{explanation}}</p>{{/explanation}}
+        {{#example sentences}}<p><span class="label">Example</span><br>{{example sentences}}</p>{{/example sentences}}
+        {{#sino roots}}<p><span class="label">Synonyms</span><br>{{sino roots}}</p>{{/sino roots}}
+        {{#korean roots}}<p><span class="label">Antonyms</span><br>{{antonyms}}</p>{{/korean roots}}
+    </div>
+</div>

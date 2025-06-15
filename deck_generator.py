@@ -7,19 +7,34 @@ import genanki
 from pydantic import BaseModel, Field, create_model
 from google.cloud import texttospeech
 from google.api_core.client_options import ClientOptions
+from google.cloud.texttospeech import VoiceSelectionParams
 
 
 class DeckGenerator:
     """Class for generating Anki decks with vocabulary cards."""
-    class AIConfig:
-        """Configuration for the AI model used to generate vocabulary content."""
+    class LLMConfig:
+        """Configuration for the LLM model used to generate vocabulary content."""
 
-        def __init__(self, open_router_key: str, google_tts_key: str = "", model: str = "openai/gpt-4.1", temperature: float = 0.3):
+        def __init__(
+                self,
+                instructor: instructor.Instructor,
+                system_prompt: str = "You are an expert language teacher. Your task is to help students understand and learn vocabulary words.",
+                model: str = "openai/gpt-4.1",
+                temperature: float = 0.3):
             """Initializes the AI configuration with model and temperature."""
-            self.open_router_key = open_router_key
-            self.google_tts_key = google_tts_key
+            self.instructor = instructor
+            self.system_prompt = system_prompt
             self.model = model
             self.temperature = temperature
+
+    class TTSConfig:
+        """Configuration for Google Text-to-Speech."""
+
+        def __init__(self, 
+                    google_tts_client: texttospeech.TextToSpeechClient,
+                    voice: VoiceSelectionParams):
+            self.google_tts_client = google_tts_client
+            self.voice = voice
 
     class AnkiConfig:
         """Configuration for Anki deck generation."""
@@ -44,33 +59,23 @@ class DeckGenerator:
                 is_list = attributes.get("list", False)
                 description = attributes["description"]
                 field_type = list[str] if is_list else str
-                fields[field_name] = (field_type, Field(..., description=description))
+                fields[field_name] = (
+                    field_type, Field(..., description=description))
             return create_model(model_name, __base__=BaseModel, **fields)
 
     def __init__(
             self,
             schema: SchemaConfig,
-            ai_config: AIConfig,
             anki_config: AnkiConfig,
+            llm_config: LLMConfig,
+            tts_config: TTSConfig = None,
             gen_audio: bool = False):
         self.schema_config = schema
         self.pydantic_schema = schema.gen_ai_schema()
-        self.ai_config = ai_config
+        self.llm_config = llm_config
+        self.tts_config = tts_config
         self.anki_config = anki_config
         self.gen_audio = gen_audio
-
-        # Set Up Instructor AI client
-        client = openai.OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=ai_config.open_router_key,
-        )
-        self.instructor_client = instructor.from_openai(client)
-
-        # Set up Google Text-to-Speech client if audio generation is enabled
-        if self.gen_audio:
-            client_options = ClientOptions(api_key=ai_config.google_tts_key)
-            self.google_tts_client = texttospeech.TextToSpeechClient(
-                client_options=client_options)
 
         # Generate Anki model and fields from schema
         if schema.field_order is None or schema.field_order == []:
@@ -105,27 +110,23 @@ class DeckGenerator:
     def gen_audio_file(self, text: str, audio_path: str):
         """Generates audio for a given word using Google Text-to-Speech."""
         synthesis_input = texttospeech.SynthesisInput(text=text)
-        voice = texttospeech.VoiceSelectionParams(
-            language_code="ko-KR",
-            ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL,
-        )
         audio_config = texttospeech.AudioConfig(
             audio_encoding=texttospeech.AudioEncoding.MP3)
-        response = self.google_tts_client.synthesize_speech(
-            input=synthesis_input, voice=voice, audio_config=audio_config)
+        response = self.tts_config.google_tts_client.synthesize_speech(
+            input=synthesis_input, voice=self.tts_config.voice, audio_config=audio_config)
         with open(audio_path, "wb") as out:
             out.write(response.audio_content)
             logging.getLogger().info(
                 f"[INFO] Audio content written to file '{text}.mp3'")
 
     def gen_ai_content(self, word: str) -> BaseModel:
-        card_note = self.instructor_client.chat.completions.create(
-            model=self.ai_config.model,
+        card_note = self.llm_config.instructor.chat.completions.create(
+            model=self.llm_config.model,
             response_model=self.pydantic_schema,
             messages=[
                 {
                     "role": "system",
-                    "content": "You are an expert language teacher. Your task is to help students understand and learn vocabulary words."
+                    "content": self.llm_config.system_prompt
                 },
                 {
                     "role": "user",
@@ -177,11 +178,12 @@ class DeckGenerator:
         for i in range(len(items)):
             item = items[i]
             note_id = f"{name_prefix}-{i+1}"
-            logging.getLogger().info(f"[INFO] ({i+1}/{len(items)}) Generating content for {item}")
+            logging.getLogger().info(
+                f"[INFO] ({i+1}/{len(items)}) Generating content for {item}")
 
             # Generate content for the word using AI
             card_note_ai = self.gen_ai_content(item)
-            
+
             # Create dictionary from AI model
             dct = card_note_ai.model_dump()
             dct = {key.replace('_', ' '): value for key, value in dct.items()}

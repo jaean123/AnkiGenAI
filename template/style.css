@@ -1,0 +1,91 @@
+@font-face {
+    font-family: myfont;
+    src: url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,500;1,500&display=swap');
+}
+
+.label {
+    font-size: 11px;
+}
+
+.card {
+    font-family: "DM sans", "Hiragino Sans", "Helvetica", "Arial";
+    font-size: 20px;
+    text-align: center;
+}
+
+.front {
+    color: #fff;
+    background-color: #58BFFC;
+}
+
+.back {
+    color: #58BFFC;
+    background-color: #fff;
+}
+
+.prompt {
+    font-size: 12rem;
+    font-kerning: normal;
+    font-feature-settings: "palt";
+}
+
+.mobile .prompt {
+    font-size: 10rem;
+}
+
+
+.typed-answer {
+    font-size: 4rem;
+    padding-bottom: 20px;
+}
+
+
+.memory-hint {
+    padding: 20px 0 5px 20px;
+    font-size: 20px;
+    text-align: left;
+    color: #000;
+}
+
+.mnemonic-text {
+    font-size: 20px;
+    padding: 0 20px 0 20px;
+    text-align: left;
+    color: #000;
+}
+
+.mnemonic-image {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+}
+
+input[type=text] {
+    width: 100%;
+    text-align: center;
+    padding: 12px 0px;
+    font-size: 25px;
+}
+
+.replay-button svg {
+    width: 40px;
+    height: 40px;
+    stroke: transparent;
+    stroke-width: 0px;
+    margin-top: 20px;
+}
+
+.replay-button svg circle {
+    fill: #FC779A;
+}
+
+.replay-button svg path {
+    fill: #fff;
+}
+
+.hint {
+    border: solid 15px;
+    margin: 20px 0 0 0;
+    padding: 0 0 20px 0;
+}
