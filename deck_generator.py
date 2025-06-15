@@ -2,11 +2,9 @@ import os
 import logging
 
 import instructor
-import openai
 import genanki
 from pydantic import BaseModel, Field, create_model
 from google.cloud import texttospeech
-from google.api_core.client_options import ClientOptions
 from google.cloud.texttospeech import VoiceSelectionParams
 
 
@@ -30,9 +28,9 @@ class DeckGenerator:
     class TTSConfig:
         """Configuration for Google Text-to-Speech."""
 
-        def __init__(self, 
-                    google_tts_client: texttospeech.TextToSpeechClient,
-                    voice: VoiceSelectionParams):
+        def __init__(self,
+                     google_tts_client: texttospeech.TextToSpeechClient,
+                     voice: VoiceSelectionParams):
             self.google_tts_client = google_tts_client
             self.voice = voice
 

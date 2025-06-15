@@ -1,12 +1,6 @@
-import os
 import logging
-import dotenv
-import openai
-import instructor
 from deck_generator import DeckGenerator
-from google.cloud import texttospeech
-from google.api_core.client_options import ClientOptions
-from google.cloud.texttospeech import VoiceSelectionParams
+from deck_utils import setup_logging, create_llm_config, create_tts_config
 
 # ---------------------------------------------------------------------
 # Configuration
@@ -19,8 +13,6 @@ word_path = "data/google-10000-english-no-swears.txt"
 
 # LLM Config
 system_prompt = "You are an expert English language teacher based in Korea. Your task is to help students understand and learn English words."
-llm_model = "openai/gpt-4.1"
-llm_temperature = 0.3
 
 # Google TTS Config
 generate_audio = True
@@ -80,40 +72,11 @@ field_order = [
 
 
 def main():
-    # SETUP LOGGING
-    os.makedirs(output_dir, exist_ok=True)
-    logging.basicConfig(filename=f"{output_dir}/deck_gen.log",
-                        format='%(asctime)s %(message)s',
-                        filemode='w')
-    logger = logging.getLogger()
-    logger.addHandler(logging.StreamHandler())
-    logger.setLevel(logging.INFO)
+    setup_logging(output_dir)
 
-    # AI CLIENT CONFIGURATION & SETUP
-    client = openai.OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=dotenv.get_key(".env", "OPENROUTER_API_KEY")
-    )
-    instructor_client = instructor.from_openai(client)
-    llm_config = DeckGenerator.LLMConfig(
-        instructor=instructor_client,
-        system_prompt=system_prompt,
-        model=llm_model,
-        temperature=llm_temperature
-    )
-
-    # GOOGLE TTS CONFIGURATION & SETUP
-    client_options = ClientOptions(
-        api_key=dotenv.get_key(".env", "GOOGLE_API_KEY"))
-    google_tts_client = texttospeech.TextToSpeechClient(
-        client_options=client_options)
-    voice = VoiceSelectionParams(language_code=language_code, name=voice_name)
-    tts_config = DeckGenerator.TTSConfig(
-        google_tts_client=google_tts_client,
-        voice=voice,
-    )
-
-    # SCHEMA CONFIGURATION
+    # Create configurations
+    llm_config = create_llm_config(system_prompt)
+    tts_config = create_tts_config(language_code, voice_name)
     schema = DeckGenerator.SchemaConfig(
         ai_schema=ai_schema,
         item_field=word_field,
@@ -121,9 +84,10 @@ def main():
         field_order=field_order
     )
 
-    # IMPORT WORDS FROM FILE
+    # Load data
     with open(word_path, "r", encoding="utf-8") as f:
         words = [line.strip() for line in f if line.strip()]
+        logging.getLogger().info(f"[INFO] Imported {len(words)} from {word_path}")
 
     provided_content = {
         # Frequency is just the index + 1
@@ -138,7 +102,7 @@ def main():
     #     "frequency": [provided_content["frequency"][i] for i in random_indices]
     # }
 
-    # GENERATE ANKI DECK
+    # Generate Anki deck
     deck_generator = DeckGenerator(
         schema=schema,
         llm_config=llm_config,
