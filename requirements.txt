@@ -13,13 +13,16 @@ chevron==0.14.0
 click==8.2.1
 distro==1.9.0
 docstring_parser==0.16
+dotenv==0.9.9
 frozendict==2.4.6
 frozenlist==1.7.0
 genanki==0.13.1
-google==3.0.0
 google-api-core==2.25.1
 google-auth==2.40.3
+google-cloud-texttospeech==2.27.0
 googleapis-common-protos==1.70.0
+grpcio==1.73.0
+grpcio-status==1.73.0
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
@@ -40,6 +43,7 @@ pyasn1_modules==0.4.2
 pydantic==2.11.7
 pydantic_core==2.33.2
 Pygments==2.19.1
+python-dotenv==1.1.0
 PyYAML==6.0.2
 requests==2.32.4
 rich==13.9.4

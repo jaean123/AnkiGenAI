@@ -2,5 +2,6 @@
 /.env
 /.venv
 /.vscode
+/archive
 /decks
 /output

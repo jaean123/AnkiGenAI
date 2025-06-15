@@ -56,6 +56,14 @@ ai_schema = {
                        "[Hanguel] - [Meaning in English]. If not applicable, output an empty list.",
         "list": True,
     },
+    "synonyms": {
+        "description": "List of synonyms in Korean in the following format: [Hanguel] - [Meaning in English]. If not applicable, output an empty list.",
+        "list": True,
+    },
+    "antonyms": {
+        "description": "List of antonyms in Korean in the following format: [Hanguel] - [Meaning in English]. If not applicable, output an empty list.",
+        "list": True,
+    },
     "cultural note": {
         "description": "Cultural note about the word if it is sensible in a language class to include it. If not, output an empty string.",
     }
@@ -64,8 +72,8 @@ ai_schema = {
 provided_fields = ["frequency"]
 
 field_order = [
-    "frequency", "word", "type", "explanation", "example sentences",
-    "sino roots", "korean roots", "cultural note"
+    "frequency", "word", "type", "explanation", "example sentences", 
+    "sino roots", "korean roots", "cultural note", "synonyms", "antonyms",
 ]
 
 schema = DeckGenerator.SchemaConfig(
@@ -110,7 +118,7 @@ def main():
     }
 
     # Randomly sample n items from the notes
-    sample_size = 10
+    sample_size = 100
     random_indices = random.sample(range(len(notes)), sample_size)
     items = [items[i] for i in random_indices]
     provided_content = {
