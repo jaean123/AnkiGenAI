@@ -1,6 +1,5 @@
 import os
 import logging
-
 import instructor
 import genanki
 from pydantic import BaseModel, Field, create_model
@@ -30,9 +29,11 @@ class DeckGenerator:
 
         def __init__(self,
                      google_tts_client: texttospeech.TextToSpeechClient,
-                     voice: VoiceSelectionParams):
+                     voice_params: VoiceSelectionParams,
+                     speak_rate: float = 1.0):
             self.google_tts_client = google_tts_client
-            self.voice = voice
+            self.voice_params = voice_params
+            self.speak_rate = speak_rate
 
     class AnkiConfig:
         """Configuration for Anki deck generation."""
@@ -99,19 +100,30 @@ class DeckGenerator:
             templates=[
                 {
                     "name": "Card 1",
-                    "qfmt": f"{{{{{schema.item_field}}}}}",
-                    "afmt": "{{FrontSide}}"
+                    "qfmt": f'<p style="font-size: 24px; ">{{{{{schema.item_field}}}}}</p>',
+                    "afmt": self.gen_afmt(),
                 }
             ]
         )
+
+    def gen_afmt(self) -> str:
+        """Generates the back template for the Anki card."""
+        tmpl = """<div style="text-align: left; font-size: 16px; ">{{FrontSide}}</div><hr>"""
+        for field in self.anki_fields:
+            field_name = field['name']
+            tmpl += f'{{{{#{field_name}}}}}<p><span style="font-size: 11px; ">{field_name}</span><br>{{{{{field_name}}}}}</p>{{{{/{field_name}}}}}'
+        tmpl += "</div>"
+        return tmpl
 
     def gen_audio_file(self, text: str, audio_path: str):
         """Generates audio for a given word using Google Text-to-Speech."""
         synthesis_input = texttospeech.SynthesisInput(text=text)
         audio_config = texttospeech.AudioConfig(
-            audio_encoding=texttospeech.AudioEncoding.MP3)
+            audio_encoding=texttospeech.AudioEncoding.MP3,
+            speaking_rate=self.tts_config.speak_rate,
+        )
         response = self.tts_config.google_tts_client.synthesize_speech(
-            input=synthesis_input, voice=self.tts_config.voice, audio_config=audio_config)
+            input=synthesis_input, voice=self.tts_config.voice_params, audio_config=audio_config)
         with open(audio_path, "wb") as out:
             out.write(response.audio_content)
             logging.getLogger().info(

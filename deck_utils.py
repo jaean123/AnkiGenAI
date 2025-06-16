@@ -38,7 +38,7 @@ def create_llm_config(system_prompt: str, model: str = "openai/gpt-4.1", tempera
     )
 
 
-def create_tts_config(language_code: str, voice_name: str) -> DeckGenerator.TTSConfig:
+def create_tts_config(language_code: str, voice_name: str, speak_rate: float = 1.0) -> DeckGenerator.TTSConfig:
     """Create TTS configuration."""
     client_options = ClientOptions(
         api_key=dotenv.get_key(".env", "GOOGLE_API_KEY")
@@ -50,5 +50,6 @@ def create_tts_config(language_code: str, voice_name: str) -> DeckGenerator.TTSC
 
     return DeckGenerator.TTSConfig(
         google_tts_client=google_tts_client,
-        voice=voice
+        voice_params=voice,
+        speak_rate=speak_rate
     )

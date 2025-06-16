@@ -27,8 +27,6 @@ anki_config = DeckGenerator.AnkiConfig(
     deck_name="Korean AI"
 )
 
-word_field = "word"
-
 # Define the structured data model for AI output
 ai_schema = {
     "type": {
@@ -68,7 +66,7 @@ ai_schema = {
 provided_fields = ["frequency"]
 
 field_order = [
-    "frequency", word_field, "type", "explanation", "example sentences",
+    "frequency", "word", "type", "explanation", "example sentences",
     "sino roots", "korean roots", "cultural note", "synonyms", "antonyms",
 ]
 
@@ -109,7 +107,7 @@ def main():
     tts_config = create_tts_config(language_code, voice_name)
     schema = DeckGenerator.SchemaConfig(
         ai_schema=ai_schema,
-        item_field=word_field,
+        item_field="word",
         provided_fields=provided_fields,
         field_order=field_order
     )
