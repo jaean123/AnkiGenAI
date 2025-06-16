@@ -94,7 +94,7 @@ def main():
     }
 
     # RANDOMLY SAMPLE N ITEMS
-    sample_size = 10
+    sample_size = 100
     random_indices = random.sample(range(len(words)), sample_size)
     words = [words[i] for i in random_indices]
     provided_content = {
